@@ -2,7 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "bcrypt";
 
 async function main() {
-  const prisma = new PrismaClient().$extends({
+  const prisma = new PrismaClient();
+  const xprisma = new PrismaClient().$extends({
     result: {
       user: {
         password: {
@@ -15,7 +16,7 @@ async function main() {
     },
   });
 
-  const user = await prisma.user.upsert({
+  const user = await xprisma.user.upsert({
     where: {
       id: 1,
     },
@@ -28,7 +29,7 @@ async function main() {
       password: await hash("somePassword", 10),
     },
   });
-  const post = await prisma.post.upsert({
+  const post = await xprisma.post.upsert({
     where: {
       id: 1,
     },
@@ -53,7 +54,12 @@ async function main() {
       user: true,
     },
   });
-  console.table([user, post.user]);
+  const unsafeUser = await prisma.user.findFirst({ where: { id: 1 } });
+  const unsafePost = await prisma.post.findFirst({
+    where: { id: 1 },
+    include: { user: true },
+  });
+  console.table([user, post.user, unsafeUser, unsafePost?.user]);
 }
 
 main();
